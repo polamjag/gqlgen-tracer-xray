@@ -1,0 +1,34 @@
+---
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+jobs:
+  test:
+    strategy:
+      matrix:
+        go_version:
+          - "1.11.x"
+          - "1.12.x"
+          - "1.13.x"
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macOS-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      -
+        uses: actions/checkout@master
+      -
+        uses: actions/setup-go@master
+        with:
+          go-version: ${{ matrix.go_version }}
+          version: ${{ matrix.go_version }}
+      -
+        name: test
+        run: |
+          go get -v all
+          go test -race -cover ./...
+        env:
+          GO111MODULE: on
