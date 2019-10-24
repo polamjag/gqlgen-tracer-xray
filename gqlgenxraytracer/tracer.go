@@ -25,6 +25,7 @@ func (t tracer) StartOperationExecution(ctx context.Context) context.Context {
 	var seg *xray.Segment
 	ctx, seg = xray.BeginSubsegment(ctx, "gql op "+opName)
 	seg.AddMetadata("gql.variables", reqCtx.Variables)
+	seg.AddMetadata("gql.complexity", reqCtx.OperationComplexity)
 	return ctx
 }
 
