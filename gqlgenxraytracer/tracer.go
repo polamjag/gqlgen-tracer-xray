@@ -22,15 +22,20 @@ func (t tracer) StartOperationExecution(ctx context.Context) context.Context {
 	if opName == "" {
 		opName = "(unnamed)"
 	}
-	var seg *xray.Segment
-	ctx, seg = xray.BeginSubsegment(ctx, "gql op "+opName)
+	subCtx, seg := xray.BeginSubsegment(ctx, "gql op "+opName)
+	if seg == nil {
+		return ctx
+	}
 	seg.AddMetadata("gql.variables", reqCtx.Variables)
 	seg.AddMetadata("gql.complexity", reqCtx.OperationComplexity)
-	return ctx
+	return subCtx
 }
 
 func (t tracer) StartFieldExecution(ctx context.Context, field graphql.CollectedField) context.Context {
 	subCtx, _ := xray.BeginSubsegment(ctx, "gql field "+field.Name)
+	if subCtx == nil {
+		return ctx
+	}
 	return subCtx
 }
 
