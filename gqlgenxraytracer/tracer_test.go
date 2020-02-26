@@ -55,6 +55,37 @@ func TestTracer(t *testing.T) {
 			},
 			Body: `{"query":"{ visitor { name } }"}`,
 		},
+		{
+			Name:   "with name",
+			Tracer: New(),
+			ExpectedSegments: []*xray.Segment{
+				&xray.Segment{
+					Name: "gql op GetVisitorName",
+					Metadata: map[string]map[string]interface{}{
+						"default": map[string]interface{}{
+							"gql.complexity": 0,
+							"gql.variables":  map[string]interface{}{},
+						},
+					}},
+				&xray.Segment{
+					Name: "gql field visitor",
+					Metadata: map[string]map[string]interface{}{
+						"default": map[string]interface{}{
+							"gql.field":  "visitor",
+							"gql.object": "Query",
+						},
+					}},
+				&xray.Segment{
+					Name: "gql field name",
+					Metadata: map[string]map[string]interface{}{
+						"default": map[string]interface{}{
+							"gql.field":  "name",
+							"gql.object": "User",
+						},
+					}},
+			},
+			Body: `{"query":"query GetVisitorName { visitor { name } }","operationName":"GetVisitorName"}`,
+		},
 	}
 	for _, spec := range specs {
 		t.Run(spec.Name, func(t *testing.T) {
