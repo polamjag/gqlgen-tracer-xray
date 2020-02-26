@@ -71,12 +71,14 @@ func TestTracer(t *testing.T) {
 			seg.Close(nil)
 			if resp.Code != 200 {
 				t.Error("request failed")
+				return
 			}
 
 			gotSeg := xray.GetSegment(ctx)
 			subSegs := drainSegments(gotSeg)
 			if len(subSegs) != len(spec.ExpectedSegments) {
 				t.Errorf("expected %d sub-segments but got %d", len(spec.ExpectedSegments), len(subSegs))
+				return
 			}
 			for i, expectedSubSeg := range spec.ExpectedSegments {
 				gotSubSeg := subSegs[i]
@@ -86,6 +88,7 @@ func TestTracer(t *testing.T) {
 				expected := encodeJSON(t, expectedSubSeg)
 				if string(got) != string(expected) {
 					t.Errorf("[#%02d] expected segment:%s but got:%s", i, string(expected), string(got))
+					return
 				}
 			}
 		})
