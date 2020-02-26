@@ -1,0 +1,11 @@
+---
+
+schema:
+  - testdata/schema.gql
+exec:
+  filename: testdata/handler_gen.go
+model:
+  filename: testdata/dto_gen.go
+resolver:
+  filename: testdata/resolver.go
+  type: Resolver

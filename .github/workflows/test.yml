@@ -25,10 +25,13 @@ jobs:
         with:
           go-version: ${{ matrix.go_version }}
           version: ${{ matrix.go_version }}
+      - name: install
+        run: |
+          go get -v all
+          go list -m all
       -
         name: test
         run: |
-          go get -v all
           go test -race -cover ./...
         env:
           GO111MODULE: on

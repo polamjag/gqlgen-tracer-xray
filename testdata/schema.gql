@@ -1,0 +1,9 @@
+type Query {
+  visitor: User!
+  user(name: String!): User
+}
+
+type User {
+  name: String!
+  age: Int!
+}
