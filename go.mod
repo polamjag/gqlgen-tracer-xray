@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/99designs/gqlgen v0.11.1
 	github.com/DATA-DOG/go-sqlmock v1.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.29.10 // indirect
+	github.com/aws/aws-sdk-go v1.29.11 // indirect
 	github.com/aws/aws-xray-sdk-go v0.9.4
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/dgryski/trifles v0.0.0-20191129005055-5a6159895336 // indirect
