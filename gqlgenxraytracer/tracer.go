@@ -34,46 +34,71 @@ func (t tracer) Validate(es graphql.ExecutableSchema) error {
 	return nil
 }
 
-func (t tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
-	log.Logger.Printf("start build response")
-	startedAt := time.Now()
-	res := next(ctx)
-	finishedAt := time.Now()
-	log.Logger.Printf("finish build response; elapsed:%s", finishedAt.Sub(startedAt))
-	return res
-}
-
-func (t tracer) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+func beginOperationSegment(ctx context.Context) (context.Context, *xray.Segment) {
 	oc := graphql.GetOperationContext(ctx)
 	opName := oc.OperationName
 	if opName == "" {
 		opName = "(unnamed)"
 	}
 	subCtx, seg := xray.BeginSubsegment(ctx, fmt.Sprintf("gql op %s", opName))
+	return subCtx, seg
+}
+
+func (t tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
+	log.Logger.Printf("start build response")
+	startedAt := time.Now()
+	subCtx, seg := beginOperationSegment(ctx)
 	if seg == nil {
-		log.Logger.Printf("InterceptOperation: no parent segment")
+		log.Logger.Printf("! cannot begin operation segment")
 		return next(ctx)
 	}
-	finish := func() {
+	finish := func(atDefer bool) {
 		if seg.InProgress {
-			log.Logger.Println("finished at defer")
 			seg.Close(nil)
-			log.Close(seg)
+			log.Close(seg, atDefer)
 		}
 	}
-	defer finish()
+	defer finish(true)
+	oc := graphql.GetOperationContext(ctx)
 	seg.AddMetadata("gql.variables", oc.Variables)
 	log.Start(seg)
+
+	res := next(subCtx)
+	finishedAt := time.Now()
+	log.Logger.Printf("finish build response; elapsed:%s", finishedAt.Sub(startedAt))
+	finish(false)
+
+	return res
+}
+
+func (t tracer) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+	// subCtx, seg := beginOperationSegment(ctx)
+	// if seg == nil {
+	// 	log.Logger.Printf("InterceptOperation: no parent segment")
+	// 	return next(ctx)
+	// }
+	// finish := func() {
+	// 	if seg.InProgress {
+	// 		log.Logger.Println("finished at defer")
+	// 		seg.Close(nil)
+	// 		log.Close(seg)
+	// 	}
+	// }
+	// defer finish()
+	// oc := graphql.GetOperationContext(ctx)
+	// seg.AddMetadata("gql.variables", oc.Variables)
+	// log.Start(seg)
 	// TODO: complexity
 
-	h := next(subCtx)
-	finish()
-	return h
+	return next(ctx)
+	// h := next(subCtx)
+	// finish()
+	// return h
 }
 
 func (t tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	parentSubSeg := xray.GetSegment(ctx)
-	log.Logger.Printf("InterceptField: parent subsegment name=%q %#v", parentSubSeg.Name, parentSubSeg)
+	log.Logger.Printf("InterceptField: parent subsegment name=%q", parentSubSeg.Name)
 
 	fc := graphql.GetFieldContext(ctx)
 
@@ -82,14 +107,13 @@ func (t tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 		log.Logger.Printf("InterceptField: no parent segment")
 		return next(ctx)
 	}
-	finish := func() {
+	finish := func(atDefer bool) {
 		if seg.InProgress {
-			log.Logger.Println("finished at defer")
 			seg.Close(nil)
-			log.Close(seg)
+			log.Close(seg, atDefer)
 		}
 	}
-	defer finish()
+	defer finish(true)
 	seg.AddMetadata("gql.object", fc.Object)
 	seg.AddMetadata("gql.field", fc.Field.Name)
 	log.Start(seg)
@@ -100,6 +124,6 @@ func (t tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	}
 
 	res, err := next(subCtx)
-	finish()
+	finish(false)
 	return res, err
 }
