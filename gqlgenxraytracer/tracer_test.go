@@ -17,6 +17,7 @@ import (
 func TestTracer(t *testing.T) {
 	xray.Configure(xray.Config{
 		ContextMissingStrategy: nopMissingStrategy(0),
+		LogLevel:               "trace",
 	})
 	specs := []struct {
 		Name             string
@@ -99,7 +100,11 @@ func TestTracer(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			ctx, seg := xray.BeginSegment(ctx, "test")
-			defer seg.Close(nil)
+			defer func() {
+				if seg.InProgress {
+					seg.Close(nil)
+				}
+			}()
 
 			resp := doRequest(ctx, srv, http.MethodPost, "/graphql", spec.Body)
 			seg.Close(nil)
@@ -109,6 +114,11 @@ func TestTracer(t *testing.T) {
 			}
 
 			gotSeg := xray.GetSegment(ctx)
+			if gotSeg == nil {
+				t.Errorf("no segment found")
+				return
+			}
+			t.Logf("segment = %#v", gotSeg)
 			subSegs := drainSegments(gotSeg)
 			if len(subSegs) != len(spec.ExpectedSegments) {
 				t.Errorf("expected %d sub-segments but got %d", len(spec.ExpectedSegments), len(subSegs))

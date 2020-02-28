@@ -6,7 +6,6 @@ package gqlgenxraytracer
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/aereal/gqlgen-tracer-xray/log"
@@ -45,11 +44,8 @@ func beginOperationSegment(ctx context.Context) (context.Context, *xray.Segment)
 }
 
 func (t tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
-	log.Logger.Printf("start build response")
-	startedAt := time.Now()
 	subCtx, seg := beginOperationSegment(ctx)
 	if seg == nil {
-		log.Logger.Printf("! cannot begin operation segment")
 		return next(ctx)
 	}
 	finish := func(atDefer bool) {
@@ -59,13 +55,11 @@ func (t tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		}
 	}
 	defer finish(true)
-	oc := graphql.GetOperationContext(ctx)
+	oc := graphql.GetOperationContext(subCtx)
 	seg.AddMetadata("gql.variables", oc.Variables)
 	log.Start(seg)
 
 	res := next(subCtx)
-	finishedAt := time.Now()
-	log.Logger.Printf("finish build response; elapsed:%s", finishedAt.Sub(startedAt))
 	finish(false)
 
 	return res
@@ -97,14 +91,13 @@ func (t tracer) InterceptOperation(ctx context.Context, next graphql.OperationHa
 }
 
 func (t tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
-	parentSubSeg := xray.GetSegment(ctx)
-	log.Logger.Printf("InterceptField: parent subsegment name=%q", parentSubSeg.Name)
+	// parentSubSeg := xray.GetSegment(ctx)
+	// log.Logger.Printf("InterceptField: parent subsegment name=%q", parentSubSeg.Name)
 
 	fc := graphql.GetFieldContext(ctx)
 
 	subCtx, seg := xray.BeginSubsegment(ctx, fmt.Sprintf("gql field %s", fc.Field.Name))
 	if seg == nil {
-		log.Logger.Printf("InterceptField: no parent segment")
 		return next(ctx)
 	}
 	finish := func(atDefer bool) {
