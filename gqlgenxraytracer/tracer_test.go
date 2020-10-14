@@ -34,8 +34,14 @@ func TestTracer(t *testing.T) {
 					Name: "gql op (unnamed)",
 					Metadata: map[string]map[string]interface{}{
 						"default": map[string]interface{}{
-							"gql.complexity": 0,
-							"gql.variables":  map[string]interface{}{},
+							"gql.variables": map[string]interface{}{},
+						},
+					}},
+				&xray.Segment{
+					Name: "gql op (unnamed)",
+					Metadata: map[string]map[string]interface{}{
+						"default": map[string]interface{}{
+							"gql.variables": map[string]interface{}{},
 						},
 					}},
 				&xray.Segment{
@@ -65,8 +71,14 @@ func TestTracer(t *testing.T) {
 					Name: "gql op GetVisitorName",
 					Metadata: map[string]map[string]interface{}{
 						"default": map[string]interface{}{
-							"gql.complexity": 0,
-							"gql.variables":  map[string]interface{}{},
+							"gql.variables": map[string]interface{}{},
+						},
+					}},
+				&xray.Segment{
+					Name: "gql op GetVisitorName",
+					Metadata: map[string]map[string]interface{}{
+						"default": map[string]interface{}{
+							"gql.variables": map[string]interface{}{},
 						},
 					}},
 				&xray.Segment{
