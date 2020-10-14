@@ -3,6 +3,7 @@ package gqlgenxraytracer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -120,6 +121,7 @@ func TestTracer(t *testing.T) {
 			}
 			t.Logf("segment = %#v", gotSeg)
 			subSegs := drainSegments(gotSeg)
+			fmt.Printf("subsegs got: %#v\n", subSegs)
 			if len(subSegs) != len(spec.ExpectedSegments) {
 				t.Errorf("expected %d sub-segments but got %d", len(spec.ExpectedSegments), len(subSegs))
 				return

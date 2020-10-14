@@ -66,28 +66,29 @@ func (t tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 }
 
 func (t tracer) InterceptOperation(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
-	// subCtx, seg := beginOperationSegment(ctx)
-	// if seg == nil {
-	// 	log.Logger.Printf("InterceptOperation: no parent segment")
-	// 	return next(ctx)
-	// }
-	// finish := func() {
-	// 	if seg.InProgress {
-	// 		log.Logger.Println("finished at defer")
-	// 		seg.Close(nil)
-	// 		log.Close(seg)
-	// 	}
-	// }
-	// defer finish()
-	// oc := graphql.GetOperationContext(ctx)
-	// seg.AddMetadata("gql.variables", oc.Variables)
-	// log.Start(seg)
+	subCtx, seg := beginOperationSegment(ctx)
+	if seg == nil {
+		log.Logger.Printf("InterceptOperation: no parent segment")
+		return next(ctx)
+	}
+	fmt.Printf("seg: %#v\n", seg)
+	finish := func(atDefer bool) {
+		if seg.InProgress {
+			log.Logger.Println("finished at defer")
+			seg.Close(nil)
+			log.Close(seg, atDefer)
+		}
+	}
+	defer finish(true)
+	oc := graphql.GetOperationContext(ctx)
+	seg.AddMetadata("gql.variables", oc.Variables)
+	log.Start(seg)
 	// TODO: complexity
 
-	return next(ctx)
-	// h := next(subCtx)
-	// finish()
-	// return h
+	// return next(ctx)
+	h := next(subCtx)
+	finish(false)
+	return h
 }
 
 func (t tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
